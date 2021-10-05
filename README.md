@@ -2,6 +2,19 @@
 
 To help us remind to move our lazy asses.
 
+## Local development
+```
+# Create venv for pip
+python3 -m venv venv
+# Activate venv
+source venv/bin/activate
+# Install reqs
+pip install -r requirements.txt
+
+# Install pre-commit (you only need to do this once)
+pre-commit install
+```
+
 ## Build Docker image
 ```bash
 docker build -t wg_chatbot .
