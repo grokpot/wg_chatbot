@@ -9,7 +9,7 @@ docker build -t wg_chatbot .
 
 ## Run Docker image
 ```bash
-docker run -p5000:5000 wg_chatbot
+docker run -p5000:5000 --name wg_chatbot wg_chatbot
 ```
 
 Check browser: localhost:5000
