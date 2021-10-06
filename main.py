@@ -1,7 +1,7 @@
 import datetime
 import logging
 import os
-import pytz
+#import pytz
 import random
 
 from telegram import Update
