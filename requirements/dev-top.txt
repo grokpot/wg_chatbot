@@ -1,0 +1,4 @@
+-r common-top.txt
+
+pre-commit==2.15.0
+black==21.9b0
