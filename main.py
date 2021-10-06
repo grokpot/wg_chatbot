@@ -1,7 +1,8 @@
 import datetime
 import logging
 import os
-#import pytz
+
+# import pytz
 import random
 
 from telegram import Update
@@ -79,10 +80,18 @@ class Sennbot:
         )
         cron = updater.job_queue
 
-        # Trash
+        # For testing
         # cron.run_once(self.message_send_initial_greeting, when=5)
-        cron.run_repeating(self.message_send_reminder_trash, interval=10, first=1)
-        # cron.run_daily(self.message_send_reminder_trash, days=[1, 2, 3, 4, 5, 6], time=datetime.time(hour=10, minute=00, second=00, tzinfo=pytz.timezone("Europe/Zurich")))
+        # cron.run_repeating(self.message_send_reminder_trash, interval=10, first=1)
+
+        # Trash
+        cron.run_daily(
+            self.message_send_reminder_trash,
+            days=[3, 6],
+            time=datetime.time(
+                hour=21, minute=00, second=00, tzinfo=pytz.timezone("Europe/Zurich")
+            ),
+        )
         # # Paper
         # cron.run_repeating(self.reminder_paper, interval=60, first=1)
         # # Finances
