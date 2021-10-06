@@ -4,7 +4,7 @@ EXPOSE 5000
 
 WORKDIR /app
 
-COPY requirements/ ./
+ADD requirements /app/requirements
 RUN pip install --no-cache-dir -r requirements/prod-top.txt
 
 COPY main.py .
