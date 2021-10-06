@@ -1,6 +1,6 @@
 FROM python:3-alpine
 
-EXPOSE 5000
+RUN apk update && apk add --no-cache build-base
 
 WORKDIR /app
 
