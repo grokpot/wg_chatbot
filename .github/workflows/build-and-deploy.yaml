@@ -40,7 +40,7 @@ jobs:
         image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
         region: ${{ env.REGION }}
         env_vars: TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_TESTING_CHAT_ID=${{ secrets.TELEGRAM_TESTING_CHAT_ID }},GITHUB_COMMIT_SHA=${{ github.sha }},GITHUB_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
-        flags: --cpu="1" --memory="128Mi"
+        flags: --cpu=1 --memory=128Mi
 
     - name: Show Output
       run: echo ${{ steps.deploy.outputs.url }}
