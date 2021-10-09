@@ -3,6 +3,7 @@ import logging
 import os
 import pytz
 import random
+import threading
 
 from flask import Flask, request
 from telegram import Update
@@ -19,11 +20,15 @@ https://core.telegram.org/bots
 https://python-telegram-bot.readthedocs.io/en/stable/telegram.ext.jobqueue.html
 https://medium.com/analytics-vidhya/python-telegram-bot-with-scheduled-tasks-932edd61c534
 https://towardsdatascience.com/how-to-deploy-a-telegram-bot-using-heroku-for-free-9436f89575d2
+https://nullonerror.org/2021/01/08/hosting-telegram-bots-on-google-cloud-run/
 """
 
 # ENV Vars
 PORT = os.environ.get("PORT")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_TESTING_CHAT_ID = os.environ.get("TELEGRAM_TESTING_CHAT_ID")
+GITHUB_COMMIT_SHA = os.environ.get("GITHUB_COMMIT_SHA", "local testing SHA")
+GITHUB_COMMIT_MESSAGE = os.environ.get("GITHUB_COMMIT_MESSAGE", "local testing message")
 
 # ENUMs
 GREETING_LIST = [
@@ -86,6 +91,9 @@ class Sennbot:
         )
         cron = updater.job_queue
 
+        # Announce new deployment in testing chat
+        updater.bot.send_message(TELEGRAM_TESTING_CHAT_ID, text=f"New Deployment\n Commit SHA: {GITHUB_COMMIT_SHA}\n Commit Message: {GITHUB_COMMIT_MESSAGE}")
+
         # For testing
         # cron.run_once(self.message_send_initial_greeting, when=5)
         # cron.run_repeating(self.message_send_reminder_trash, interval=10, first=1)
@@ -132,6 +140,9 @@ class Sennbot:
         else:
             echo(update, context)
 
+    def message_send_new_deployment(self, context):
+        context.bot.send_message(chat_id=TELEGRAM_TESTING_CHAT_ID, text="New Deployment")
+
     def message_send_initial_greeting(self, context):
         message = build_message("I am online!", self.signature)
         self.send_message(context, message)
@@ -149,5 +160,5 @@ class Sennbot:
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT, debug=True)
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=PORT, debug=True, use_reloader=False)).start()
     Sennbot()
