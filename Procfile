@@ -1,1 +1,1 @@
-heroku ps:scale worker=1 --app heroku-wg-chatbot
+worker: python ./main.py
