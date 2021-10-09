@@ -57,7 +57,7 @@ app = Flask(__name__)
 @app.route("/", methods=["GET"])
 def healthcheck():
     """ Respond to Cloud Run Healthcheck """
-    return "", http.HTTPStatus.NO_CONTENT
+    return "", http.HTTPStatus.OK
 
 def get_random_greeting():
     return random.choice(GREETING_LIST)
