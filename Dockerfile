@@ -4,6 +4,9 @@ RUN apk update && apk add --no-cache build-base
 
 WORKDIR /app
 
+ENV PORT 8080
+EXPOSE ${PORT}
+
 ADD requirements /app/requirements
 RUN pip install --no-cache-dir -r requirements/prod-top.txt
 
