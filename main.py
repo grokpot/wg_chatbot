@@ -123,7 +123,7 @@ class Sennbot:
         """
 
         # Only execute when messages begin with "bot"
-        if update.message.text[:3] != "bot":
+        if len(update.message.text) >= 3 and update.message.text[:3].lower() != "bot":
             return
 
         incoming_chat_id = update.effective_chat.id
