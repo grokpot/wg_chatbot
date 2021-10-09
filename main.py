@@ -24,6 +24,7 @@ https://towardsdatascience.com/how-to-deploy-a-telegram-bot-using-heroku-for-fre
 """
 
 # ENV Vars
+PORT = os.environ.get("PORT")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # ENUMs
@@ -150,6 +151,5 @@ class Sennbot:
 
 
 if __name__ == "__main__":
-    # app.run(host="localhost", port=8080, debug=True)
-    app.run(host="localhost", debug=True)
+    app.run(host="localhost", port=PORT, debug=True)
     Sennbot()
