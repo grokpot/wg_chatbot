@@ -29,12 +29,12 @@ jobs:
           HD_GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
       - name: Ensure Worker Dyno is Running
-        uses: grokpot/heroku-run@master
+        uses: michcio1234/heroku-run@master
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ env.HEROKU_APP_NAME }}
           heroku_email: "${{ secrets.HEROKU_RYANS_EMAIL }}"
-          command: heroku ps:scale worker=1
+          command: ps:scale worker=1
 
 
 
