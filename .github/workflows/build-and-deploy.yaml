@@ -1,52 +1,31 @@
-# https://github.com/google-github-actions/deploy-cloudrun
 on:
   push:
     branches:
       - master
 
 name: Build and Deploy
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
-  SERVICE: gcp-wg-chatbot
-  # europe-west6 is Zurich and low CO2, but free cloud run pricing is only available for north america
-  # https://cloud.google.com/run/pricing
-  REGION: us-central1
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup Cloud SDK
-      uses: google-github-actions/setup-gcloud@v0.2.0
-      with:
-        project_id: ${{ env.PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true  # Set to true to authenticate the Cloud Run action
+      - name: Heroku Deploy
+        uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "heroku-wg-chatbot" #Must be unique in Heroku
+          heroku_email: "${{ HEROKU_RYANS_EMAIL }}"
+          usedocker: true
+          docker_heroku_process_type: "worker"
+        env:
+          HD_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          HD_TELEGRAM_TESTING_CHAT_ID: ${{ secrets.TELEGRAM_TESTING_CHAT_ID }},
+          HD_GITHUB_COMMIT_SHA: ${{ github.sha }}
+          HD_GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
-    - name: Authorize Docker push
-      run: gcloud auth configure-docker
-
-    - name: Build and Push Container
-      run: |-
-        docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} .
-        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
-        
-    - name: Deploy to Cloud Run
-      id: deploy
-      uses: google-github-actions/deploy-cloudrun@main
-      with:
-        service: ${{ env.SERVICE }}
-        image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
-        region: ${{ env.REGION }}
-        env_vars: TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_TESTING_CHAT_ID=${{ secrets.TELEGRAM_TESTING_CHAT_ID }},GITHUB_COMMIT_SHA=${{ github.sha }},GITHUB_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
-        # --no-cpu-throttling: As of 8.10.21, it is recognized by gcloud cli but not Cloud Run flags.
-        #   Instead "CPU is always allocated" must be manually checked in the the cloud run GUI
-        # --max-instances: must be 1 or Telegram complains of too many active instances
-        flags: --max-instances=1 --cpu=1 --memory=512Mi
-
-    - name: Show Output
-      run: echo ${{ steps.deploy.outputs.url }}
+      - name: Show Output
+        run: echo ${{ steps.deploy.outputs.url }}
 
