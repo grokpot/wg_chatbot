@@ -5,7 +5,6 @@ import pytz
 import random
 import threading
 
-from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
     Updater,
@@ -55,12 +54,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-
-@app.route("/", methods=["GET"])
-def healthcheck():
-    """ Respond to Cloud Run Healthcheck """
-    return "ok", 200
 
 def get_random_greeting():
     return random.choice(GREETING_LIST)
@@ -101,7 +94,7 @@ class Sennbot:
         # Trash
         cron.run_daily(
             self.message_send_reminder_trash,
-            days=[3, 6],
+            days=[2, 6],
             time=datetime.time(
                 hour=21, minute=00, second=00, tzinfo=pytz.timezone("Europe/Zurich")
             ),
@@ -160,5 +153,4 @@ class Sennbot:
 
 
 if __name__ == "__main__":
-    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=PORT, debug=True, use_reloader=False)).start()
     Sennbot()
