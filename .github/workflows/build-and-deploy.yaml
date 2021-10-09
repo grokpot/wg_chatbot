@@ -2,9 +2,9 @@
 on:
   push:
     branches:
-      - example-build-deploy
+      - master
 
-name: Build and Deploy a Container
+name: Build and Deploy
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   SERVICE: gcp-wg-chatbot
