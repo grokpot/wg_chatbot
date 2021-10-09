@@ -39,10 +39,19 @@ jobs:
         service: ${{ env.SERVICE }}
         image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
         region: ${{ env.REGION }}
-        metadata:
-          cpu: 1
-          memory: 128Mi
         env_vars: TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_TESTING_CHAT_ID=${{ secrets.TELEGRAM_TESTING_CHAT_ID }},GITHUB_COMMIT_SHA=${{ github.sha }},GITHUB_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        metadata:
+          name: ${{ env.SERVICE }}
+        spec:
+          template:
+            spec:
+              containers:
+              - resources:
+                limits:
+                  cpu: 1000m
+                  memory: 512Mi
 
     - name: Show Output
       run: echo ${{ steps.deploy.outputs.url }}
