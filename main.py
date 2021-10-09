@@ -1,5 +1,4 @@
 import datetime
-import http
 import logging
 import os
 import pytz
@@ -9,7 +8,6 @@ from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
     Updater,
-    CommandHandler,
     MessageHandler,
     Filters,
     CallbackContext,
@@ -57,7 +55,7 @@ app = Flask(__name__)
 @app.route("/", methods=["GET"])
 def healthcheck():
     """ Respond to Cloud Run Healthcheck """
-    return "", http.HTTPStatus.OK
+    return "ok", 200
 
 def get_random_greeting():
     return random.choice(GREETING_LIST)
@@ -151,5 +149,5 @@ class Sennbot:
 
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=PORT, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)
     Sennbot()
