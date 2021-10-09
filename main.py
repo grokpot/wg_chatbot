@@ -92,7 +92,7 @@ class Sennbot:
         cron = updater.job_queue
 
         # Announce new deployment in testing chat
-        updater.bot.send_message(TELEGRAM_TESTING_CHAT_ID, text=f"New Deployment\n Commit SHA: {GITHUB_COMMIT_SHA}\n Commit Message: {GITHUB_COMMIT_MESSAGE}")
+        updater.bot.send_message(TELEGRAM_TESTING_CHAT_ID, text=f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}")
 
         # For testing
         # cron.run_once(self.message_send_initial_greeting, when=5)
