@@ -4,6 +4,8 @@ on:
       - master
 
 name: Build and Deploy
+env:
+  HEROKU_APP_NAME: "heroku-wg-chatbot"
 
 jobs:
   deploy:
@@ -16,7 +18,7 @@ jobs:
         uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
         with:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "heroku-wg-chatbot" #Must be unique in Heroku
+          heroku_app_name: ${{ HEROKU_APP_NAME }}
           heroku_email: "${{ secrets.HEROKU_RYANS_EMAIL }}"
           usedocker: true
           docker_heroku_process_type: "worker"
@@ -25,6 +27,16 @@ jobs:
           HD_TELEGRAM_TESTING_CHAT_ID: ${{ secrets.TELEGRAM_TESTING_CHAT_ID }},
           HD_GITHUB_COMMIT_SHA: ${{ github.sha }}
           HD_GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+
+      - name: Ensure Worker Dyno is Running
+        uses: michcio1234/heroku-run@0.1.1
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: ${{ HEROKU_APP_NAME }}
+          heroku_email: "${{ secrets.HEROKU_RYANS_EMAIL }}"
+          command: "heroku ps:scale worker=1"
+
+
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
