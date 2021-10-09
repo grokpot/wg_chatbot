@@ -40,8 +40,9 @@ jobs:
         image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
         region: ${{ env.REGION }}
         env_vars: TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_TESTING_CHAT_ID=${{ secrets.TELEGRAM_TESTING_CHAT_ID }},GITHUB_COMMIT_SHA=${{ github.sha }},GITHUB_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
-        # --no-cpu-throttling is important to keep a CPU allocated, otherwise long polling is terminated
-        flags: --no-cpu-throttling --cpu=1 --memory=128Mi
+        # As of 8.10.21, --no-cpu-throttling is recognized by gcloud cli but not Cloud Run flags.
+        # Instead "CPU is always allocated" must be manually checked in the the cloud run GUI
+        flags: --cpu=1 --memory=512Mi
 
     - name: Show Output
       run: echo ${{ steps.deploy.outputs.url }}
