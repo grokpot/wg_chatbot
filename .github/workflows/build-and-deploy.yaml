@@ -8,7 +8,9 @@ name: Build and Deploy
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   SERVICE: gcp-wg-chatbot
-  REGION: europe-west6
+  # europe-west6 is Zurich and low CO2, but free cloud run pricing is only available for north america
+  # https://cloud.google.com/run/pricing
+  REGION: us-east4-a
 
 jobs:
   deploy:
@@ -40,9 +42,10 @@ jobs:
         image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
         region: ${{ env.REGION }}
         env_vars: TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},TELEGRAM_TESTING_CHAT_ID=${{ secrets.TELEGRAM_TESTING_CHAT_ID }},GITHUB_COMMIT_SHA=${{ github.sha }},GITHUB_COMMIT_MESSAGE=${{ github.event.head_commit.message }}
-        # As of 8.10.21, --no-cpu-throttling is recognized by gcloud cli but not Cloud Run flags.
-        # Instead "CPU is always allocated" must be manually checked in the the cloud run GUI
-        flags: --cpu=1 --memory=512Mi
+        # --no-cpu-throttling: As of 8.10.21, it is recognized by gcloud cli but not Cloud Run flags.
+        #   Instead "CPU is always allocated" must be manually checked in the the cloud run GUI
+        # --max-instances: must be 1 or Telegram complains of too many active instances
+        flags: --max-instances=1 --cpu=1 --memory=512Mi
 
     - name: Show Output
       run: echo ${{ steps.deploy.outputs.url }}
