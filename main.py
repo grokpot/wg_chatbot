@@ -1,10 +1,11 @@
 import datetime
+import http
 import logging
 import os
-
 import pytz
 import random
 
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
     Updater,
@@ -50,6 +51,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+app = Flask(__name__)
+
+@app.route("/", methods=["GET"])
+def healthcheck():
+    """ Respond to Cloud Run Healthcheck """
+    return "", http.HTTPStatus.NO_CONTENT
 
 def get_random_greeting():
     return random.choice(GREETING_LIST)
@@ -143,4 +150,6 @@ class Sennbot:
 
 
 if __name__ == "__main__":
+    # app.run(host="localhost", port=8080, debug=True)
+    app.run(host="localhost", debug=True)
     Sennbot()

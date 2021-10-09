@@ -8,7 +8,7 @@ ENV PORT 8080
 EXPOSE ${PORT}
 
 ADD requirements /app/requirements
-RUN pip install --no-cache-dir -r requirements/prod-top.txt
+RUN pip install -r requirements/prod-top.txt
 
 COPY main.py .
 
