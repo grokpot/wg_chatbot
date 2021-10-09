@@ -10,7 +10,7 @@ env:
   SERVICE: gcp-wg-chatbot
   # europe-west6 is Zurich and low CO2, but free cloud run pricing is only available for north america
   # https://cloud.google.com/run/pricing
-  REGION: us-east4-a
+  REGION: us-central1
 
 jobs:
   deploy:
