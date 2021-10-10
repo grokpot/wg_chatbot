@@ -29,7 +29,7 @@ jobs:
           HD_GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
       - name: Ensure Worker Dyno is Running
-        uses: grokpot/heroku-command@master
+        uses: grokpot/heroku-run@master
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ env.HEROKU_APP_NAME }}
