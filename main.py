@@ -27,12 +27,15 @@ https://nullonerror.org/2021/01/08/hosting-telegram-bots-on-google-cloud-run/
 LOCAL = os.environ.get("LOCAL", False)
 if LOCAL:
     from dotenv import load_dotenv
+
     load_dotenv()
-PORT = os.environ.get("PORT") # Needed for Heroku
-REDIS_TLS_URL = os.environ.get("REDIS_TLS_URL") # Set automatically in Heroku
+PORT = os.environ.get("PORT")  # Needed for Heroku
+REDIS_TLS_URL = os.environ.get("REDIS_TLS_URL")  # Set automatically in Heroku
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_DEV_CHAT_ID = os.environ.get("TELEGRAM_DEV_CHAT_ID")
-TELEGRAM_WG_CHAT_ID = os.environ.get("TELEGRAM_WG_CHAT_ID") if not LOCAL else TELEGRAM_DEV_CHAT_ID
+TELEGRAM_WG_CHAT_ID = (
+    os.environ.get("TELEGRAM_WG_CHAT_ID") if not LOCAL else TELEGRAM_DEV_CHAT_ID
+)
 GITHUB_COMMIT_SHA = os.environ.get("GITHUB_COMMIT_SHA", "local testing SHA")
 GITHUB_COMMIT_MESSAGE = os.environ.get("GITHUB_COMMIT_MESSAGE", "local testing message")
 
@@ -85,7 +88,14 @@ class Sennbot:
     def __init__(self):
         # Connect to Redis
         url = urlparse(REDIS_TLS_URL)
-        self.r = redis.Redis(host=url.hostname, port=url.port, username=url.username, password=url.password, ssl=True, ssl_cert_reqs=None)
+        self.r = redis.Redis(
+            host=url.hostname,
+            port=url.port,
+            username=url.username,
+            password=url.password,
+            ssl=True,
+            ssl_cert_reqs=None,
+        )
 
         # Connect to Bot
         self.updater = Updater(token=TELEGRAM_BOT_TOKEN)
@@ -104,32 +114,28 @@ class Sennbot:
         cron.run_daily(
             self.message_send_reminder_trash,
             days=[2, 6],
-            time=datetime.time(
-                hour=20, minute=45, second=00, tzinfo=tz
-            ),
+            time=datetime.time(hour=20, minute=45, second=00, tzinfo=tz),
         )
         # Paper
         # Every 2 weeks at 20:30
         cron.run_repeating(
-            self.message_send_reminder_paper, 
-            interval=datetime.timedelta(weeks=2), 
-            first=datetime.datetime(2021, 10, 12, 20, 30, tzinfo=tz)
+            self.message_send_reminder_paper,
+            interval=datetime.timedelta(weeks=2),
+            first=datetime.datetime(2021, 10, 12, 20, 30, tzinfo=tz),
         )
         # Recycling
         # Sämi wants it every Thursday at 11
         cron.run_daily(
             self.message_send_reminder_recycling,
             days=[3],
-            time=datetime.time(
-                hour=11, minute=00, second=00, tzinfo=tz
-            ),
+            time=datetime.time(hour=11, minute=00, second=00, tzinfo=tz),
         )
         # Finances
         # Ryan wants it every month on the 7th at 17:00
         cron.run_monthly(
             self.message_send_reminder_finances,
             when=datetime.time(hour=17, tzinfo=tz),
-            day=7
+            day=7,
         )
 
         logger.info("Sennbot Started")
@@ -146,14 +152,14 @@ class Sennbot:
         if len(incoming_message) >= 3 and incoming_message[:3] != "bot":
             return
 
-        if 'identify' in incoming_message:
+        if "identify" in incoming_message:
             incoming_chat_id = update.effective_chat.id
             message = build_message(
                 f"This chat ID: {incoming_chat_id}",
                 self.signature,
             )
             context.bot.send_message(chat_id=incoming_chat_id, text=message)
-        
+
         else:
             echo(update, context)
 
@@ -162,7 +168,7 @@ class Sennbot:
         Because Heroku restarts dynos, we check if this is a new SHA.
         """
         last_sha_key = "last_sha"
-        last_sha_val = self.r.get(last_sha_key).decode('utf-8')
+        last_sha_val = self.r.get(last_sha_key).decode("utf-8")
         if GITHUB_COMMIT_SHA != last_sha_val:
             self.message_send_new_deployment()
             self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
@@ -171,7 +177,9 @@ class Sennbot:
         """
         Announce new deployment in testing chat
         """
-        self.send_test_message(f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}")
+        self.send_test_message(
+            f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}"
+        )
 
     def message_send_reminder_trash(self, context):
         message = build_message("Morn isch Mülltag.", self.signature)
@@ -186,7 +194,10 @@ class Sennbot:
         self.send_wg_message(message)
 
     def message_send_reminder_finances(self, context):
-        message = build_message("Ryan sollte die Finanzen regeln. Überprüfe Splitwise auf ausstehende Beträge.", self.signature)
+        message = build_message(
+            "Ryan sollte die Finanzen regeln. Überprüfe Splitwise auf ausstehende Beträge.",
+            self.signature,
+        )
         self.send_wg_message(message)
 
     def send_test_message(self, message):
