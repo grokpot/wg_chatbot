@@ -24,11 +24,15 @@ https://nullonerror.org/2021/01/08/hosting-telegram-bots-on-google-cloud-run/
 """
 
 # ENV Vars
-PORT = os.environ.get("PORT")
+LOCAL = os.environ.get("LOCAL", False)
+if LOCAL:
+    from dotenv import load_dotenv
+    load_dotenv()
+PORT = os.environ.get("PORT") # Needed for Heroku
 REDIS_TLS_URL = os.environ.get("REDIS_TLS_URL") # Set automatically in Heroku
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_DEV_CHAT_ID = os.environ.get("TELEGRAM_DEV_CHAT_ID")
-TELEGRAM_WG_CHAT_ID = os.environ.get("TELEGRAM_WG_CHAT_ID")
+TELEGRAM_WG_CHAT_ID = os.environ.get("TELEGRAM_WG_CHAT_ID") if not LOCAL else TELEGRAM_DEV_CHAT_ID
 GITHUB_COMMIT_SHA = os.environ.get("GITHUB_COMMIT_SHA", "local testing SHA")
 GITHUB_COMMIT_MESSAGE = os.environ.get("GITHUB_COMMIT_MESSAGE", "local testing message")
 
@@ -158,7 +162,8 @@ class Sennbot:
         Because Heroku restarts dynos, we check if this is a new SHA.
         """
         last_sha_key = "last_sha"
-        if GITHUB_COMMIT_SHA != self.r.get(last_sha_key):
+        last_sha_val = self.r.get(last_sha_key).decode('utf-8')
+        if GITHUB_COMMIT_SHA != last_sha_val:
             self.message_send_new_deployment()
             self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
 
