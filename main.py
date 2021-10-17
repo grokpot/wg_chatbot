@@ -94,7 +94,7 @@ class Sennbot:
             self.message_send_reminder_trash,
             days=[2, 6],
             time=datetime.time(
-                hour=21, minute=00, second=00, tzinfo=tz
+                hour=20, minute=45, second=00, tzinfo=tz
             ),
         )
         # Paper
