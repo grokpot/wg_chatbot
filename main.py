@@ -3,8 +3,9 @@ import logging
 import os
 import pytz
 import random
-import threading
+from urllib.parse import urlparse
 
+import redis
 from telegram import Update
 from telegram.ext import (
     Updater,
@@ -24,6 +25,7 @@ https://nullonerror.org/2021/01/08/hosting-telegram-bots-on-google-cloud-run/
 
 # ENV Vars
 PORT = os.environ.get("PORT")
+REDIS_TLS_URL = os.environ.get("REDIS_TLS_URL") # Set automatically in Heroku
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_DEV_CHAT_ID = os.environ.get("TELEGRAM_DEV_CHAT_ID")
 TELEGRAM_WG_CHAT_ID = os.environ.get("TELEGRAM_WG_CHAT_ID")
@@ -77,16 +79,21 @@ class Sennbot:
     signature = "🤖 Sennbot"
 
     def __init__(self):
+        # Connect to Redis
+        url = urlparse(REDIS_TLS_URL)
+        self.r = redis.Redis(host=url.hostname, port=url.port, username=url.username, password=url.password, ssl=True, ssl_cert_reqs=None)
+
+        # Connect to Bot
         self.updater = Updater(token=TELEGRAM_BOT_TOKEN)
         dispatcher = self.updater.dispatcher
         dispatcher.add_handler(
             MessageHandler(Filters.text & ~Filters.command, self.message_receive)
         )
+
+        self.check_new_deployment()
+
         cron = self.updater.job_queue
         tz = pytz.timezone("Europe/Zurich")
-
-        # Announce new deployment in testing chat
-        self.message_send_new_deployment()
 
         # Trash
         # Every Wednesday, Sunday at 21:00
@@ -146,7 +153,19 @@ class Sennbot:
         else:
             echo(update, context)
 
+    def check_new_deployment(self):
+        """
+        Because Heroku restarts dynos, we check if this is a new SHA.
+        """
+        last_sha_key = "last_sha"
+        if GITHUB_COMMIT_SHA != self.r.get(last_sha_key):
+            self.message_send_new_deployment()
+            self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
+
     def message_send_new_deployment(self):
+        """
+        Announce new deployment in testing chat
+        """
         self.send_test_message(f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}")
 
     def message_send_reminder_trash(self, context):
