@@ -175,6 +175,7 @@ class Chatbot:
         """
         General wrapper so code isn't littered with async/await
         """
+        logger.info("Sending message to %s: %s", chat_id, message)
         await self.application.updater.bot.send_message(chat_id=chat_id, text=message)
 
     def check_new_deployment(self):
