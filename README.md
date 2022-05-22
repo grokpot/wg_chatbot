@@ -2,14 +2,26 @@
 
 To help us remind to move our lazy asses.
 
-## Production Setup
-The bot is owned by one person and runs on Heroku.
-Heroku access can be granted via email.
-Environment variables are set in GITHUB and transferred to Heroku. This means - *only make changes to Github secrets, not Heroku config vars*!
+## Architecture
+The bot is owned by one person and runs on Heroku.  
+Heroku access can be granted via email.  
+Environment variables are set in GITHUB as *environment secrets* and transferred to Heroku.   
+This means:
+```diff
+- only make changes to Github secrets, Heroku config vars are overwritten on commit!
+```
 
 When code is updated, a Github Action runs and deploys the updated code to Heroku.
 
-### Bot Setup
+The following env vars are required in Github under the `production` environment:
+- `HEROKU_API_KEY`: The account-associated API key
+- `HEROKU_RYANS_EMAIL`: The account email address
+- `TELEGRAM_BOT_TOKEN`: The bot API token (see `Bot Setup`)
+- `TELEGRAM_DEV_CHAT_ID`: The dev/test chat ID - note this is still included in the Github "production" environment - this is simply just another chat for testing commands and not spamming WG chat members
+- `TELEGRAM_WG_CHAT_ID`: The actual "production" chat ID
+
+
+## Bot Setup
 Telegram has a bot factory user name "BotFather". Steps to setting up a new bot:
 1. Message "BotFather"
 2. Type `/mybots` to check if bots already exist
