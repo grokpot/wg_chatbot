@@ -98,16 +98,16 @@ class Chatbot:
 
     def meme(self, update: Update, context: CallbackContext):
         response = build_message(f"Coming soon")
-        self.send_message(chat_id=update.effective_chat.id, text=response)
+        self.send_message(update.effective_chat.id, response)
 
     def identify(self, update: Update, context: CallbackContext):
         incoming_chat_id = update.effective_chat.id
         response = build_message(f"This chat ID: {incoming_chat_id}")
-        self.send_message(chat_id=update.effective_chat.id, text=response)
+        self.send_message(update.effective_chat.id, response)
 
     def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
         response = build_message(f"Available commands are: /meme, /identify")
-        self.send_message(chat_id=update.effective_chat.id, text=response)
+        self.send_message(update.effective_chat.id, response)
 
     def add_jobs(self, cron):
         tz = pytz.timezone("Europe/Zurich")
@@ -184,6 +184,8 @@ class Chatbot:
         """
         last_sha_key = "last_sha"
         last_sha_val = self.r.get(last_sha_key).decode("utf-8")
+        logger.info("Current SHA: %s", GITHUB_COMMIT_SHA)
+        logger.info("Last SHA: %s", last_sha_val)
         if GITHUB_COMMIT_SHA != last_sha_val:
             self.send_dev_message(
                 f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}"
