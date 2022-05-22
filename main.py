@@ -1,4 +1,4 @@
-from asyncio import CancelledError
+import asyncio
 import datetime
 import logging
 import os
@@ -70,7 +70,7 @@ class Chatbot:
     def __init__(self):
         # Connect to Redis
         url = urlparse(REDIS_TLS_URL)
-        self.r = redis.Redis(
+        self.redis = redis.Redis(
             host=url.hostname,
             port=url.port,
             username=url.username,
@@ -81,20 +81,19 @@ class Chatbot:
 
         self.application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
+        logger.info("Bot Starting")
+        self.check_new_deployment()
         # Handlers
         self.application.add_handler(CommandHandler("meme", self.meme))
         self.application.add_handler(CommandHandler("identify", self.identify))
         self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown))
+        self.add_jobs(self.application.job_queue)
 
-        self.check_new_deployment()
-        cron = self.application.job_queue
-        self.add_jobs(cron)
-        logger.info("Bot Started")
-
-        try:
-            self.application.run_polling(drop_pending_updates=True)
-        except CancelledError:
-            pass
+    def poll(self):
+        """
+        Poll for user input
+        """
+        self.application.run_polling(drop_pending_updates=True)
 
     async def meme(self, update: Update, context: CallbackContext):
         response = build_message(f"Coming soon")
@@ -142,39 +141,26 @@ class Chatbot:
 
     def message_send_reminder_trash(self, context):
         message = build_message("Morn isch Mülltag.")
-        self.send_wg_message(message)
+        self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
     def message_send_reminder_paper(self, context):
         message = build_message("Morn isch Karton-Recycling Tag.")
-        self.send_wg_message(message)
+        self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
     def message_send_reminder_recycling(self, context):
         message = build_message("Bitte denk an das Recycling.")
-        self.send_wg_message(message)
+        self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
     def message_send_reminder_finances(self, context):
         message = build_message(
             "Ryan sollte die Finanzen regeln. Überprüfe Splitwise auf ausstehende Beträge.",
         )
-        self.send_wg_message(message)
-
-    def send_dev_message(self, message):
-        """
-        Sends a message to the Dev Chat
-        """
-        self.send_message(TELEGRAM_DEV_CHAT_ID, message)
-
-    def send_wg_message(self, message):
-        """
-        Sends a message to the WG Chat
-        """
         self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
     async def send_message(self, chat_id, message):
         """
-        General wrapper so code isn't littered with async/await
+        Sends a message to a chat
         """
-        logger.info("Sending message to %s: %s", chat_id, message)
         await self.application.updater.bot.send_message(chat_id=chat_id, text=message)
 
     def check_new_deployment(self):
@@ -182,15 +168,25 @@ class Chatbot:
         Because Heroku restarts dynos, we check if this is a new SHA.
         """
         last_sha_key = "last_sha"
-        last_sha_val = self.r.get(last_sha_key).decode("utf-8")
+        last_sha_val = self.redis.get(last_sha_key).decode("utf-8")
         logger.info("Current SHA: %s", GITHUB_COMMIT_SHA)
         logger.info("Last SHA: %s", last_sha_val)
-        if GITHUB_COMMIT_SHA != last_sha_val:
-            self.send_dev_message(
-                f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}"
+        if True:
+            # if GITHUB_COMMIT_SHA != last_sha_val:
+            func = lambda: self.send_message(
+                TELEGRAM_DEV_CHAT_ID,
+                f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}",
             )
-            self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(func())
+
+            self.redis.set(last_sha_key, GITHUB_COMMIT_SHA)
+
+
+def main():
+    bot = Chatbot()
+    bot.poll()
 
 
 if __name__ == "__main__":
-    Chatbot()
+    main()
