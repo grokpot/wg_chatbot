@@ -96,18 +96,17 @@ class Chatbot:
         except CancelledError:
             pass
 
-    def meme(self, update: Update, context: CallbackContext):
+    async def meme(self, update: Update, context: CallbackContext):
         response = build_message(f"Coming soon")
-        self.send_message(update.effective_chat.id, response)
+        await self.send_message(update.effective_chat.id, response)
 
-    def identify(self, update: Update, context: CallbackContext):
-        incoming_chat_id = update.effective_chat.id
-        response = build_message(f"This chat ID: {incoming_chat_id}")
-        self.send_message(update.effective_chat.id, response)
+    async def identify(self, update: Update, context: CallbackContext):
+        response = build_message(f"This chat ID: {update.effective_chat.id}")
+        await self.send_message(update.effective_chat.id, response)
 
-    def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
+    async def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
         response = build_message(f"Available commands are: /meme, /identify")
-        self.send_message(update.effective_chat.id, response)
+        await self.send_message(update.effective_chat.id, response)
 
     def add_jobs(self, cron):
         tz = pytz.timezone("Europe/Zurich")
