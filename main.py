@@ -95,20 +95,20 @@ class Sennbot:
             ssl_cert_reqs=None,
         )
 
-        application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+        self.application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
         # Handlers
-        application.add_handler(CommandHandler("meme", meme))
-        application.add_handler(CommandHandler("identify", identify))
-        application.add_handler(MessageHandler(filters.COMMAND, unknown))
+        self.application.add_handler(CommandHandler("meme", meme))
+        self.application.add_handler(CommandHandler("identify", identify))
+        self.application.add_handler(MessageHandler(filters.COMMAND, unknown))
 
         self.check_new_deployment()
-        cron = application.job_queue
+        cron = self.application.job_queue
         self.add_jobs(cron)
         logger.info("Bot Started")
 
         try:
-            application.run_polling(drop_pending_updates=True)
+            self.application.run_polling(drop_pending_updates=True)
         except CancelledError:
             pass
 
@@ -144,24 +144,6 @@ class Sennbot:
             day=7,
         )
 
-    def check_new_deployment(self):
-        """
-        Because Heroku restarts dynos, we check if this is a new SHA.
-        """
-        last_sha_key = "last_sha"
-        last_sha_val = self.r.get(last_sha_key).decode("utf-8")
-        if GITHUB_COMMIT_SHA != last_sha_val:
-            self.message_send_new_deployment()
-            self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
-
-    def message_send_new_deployment(self):
-        """
-        Announce new deployment in testing chat
-        """
-        self.send_test_message(
-            f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}"
-        )
-
     def message_send_reminder_trash(self, context):
         message = build_message("Morn isch Mülltag.")
         self.send_wg_message(message)
@@ -180,17 +162,33 @@ class Sennbot:
         )
         self.send_wg_message(message)
 
-    def send_test_message(self, message):
+    def send_dev_message(self, message):
         """
-        Sends a message to the Test Chat
+        Sends a message to the Dev Chat
         """
-        self.updater.bot.send_message(chat_id=TELEGRAM_DEV_CHAT_ID, text=message)
+        self.application.updater.bot.send_message(
+            chat_id=TELEGRAM_DEV_CHAT_ID, text=message
+        )
 
     def send_wg_message(self, message):
         """
         Sends a message to the WG Chat
         """
-        self.updater.bot.send_message(chat_id=TELEGRAM_WG_CHAT_ID, text=message)
+        self.application.updater.bot.send_message(
+            chat_id=TELEGRAM_WG_CHAT_ID, text=message
+        )
+
+    def check_new_deployment(self):
+        """
+        Because Heroku restarts dynos, we check if this is a new SHA.
+        """
+        last_sha_key = "last_sha"
+        last_sha_val = self.r.get(last_sha_key).decode("utf-8")
+        if GITHUB_COMMIT_SHA != last_sha_val:
+            self.send_dev_message(
+                f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}"
+            )
+            self.r.set(last_sha_key, GITHUB_COMMIT_SHA)
 
 
 if __name__ == "__main__":
