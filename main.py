@@ -1,3 +1,4 @@
+from asyncio import CancelledError
 import datetime
 import logging
 import os
@@ -8,10 +9,12 @@ from urllib.parse import urlparse
 import redis
 from telegram import Update
 from telegram.ext import (
-    Updater,
-    MessageHandler,
-    Filters,
+    ApplicationBuilder,
     CallbackContext,
+    CommandHandler,
+    CallbackContext,
+    filters,
+    MessageHandler,
 )
 
 """
@@ -48,16 +51,6 @@ GREETING_LIST = [
     "Habediehre!",
     "Sehr Geehrte Herren,",
 ]
-GOODBYE_LIST = [
-    "Tschau!",
-    "Ciao!",
-    "Tschüss!",
-    "Tschüssli!",
-    "MfG,",
-    "LG,",
-    "Adios!",
-    "さよなら!",
-]
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -69,22 +62,27 @@ def get_random_greeting():
     return random.choice(GREETING_LIST)
 
 
-def get_random_goodbye():
-    return random.choice(GOODBYE_LIST)
+def build_message(body):
+    return "\n".join([get_random_greeting(), body])
 
 
-def build_message(body, signature):
-    return "\n".join([get_random_greeting(), body, get_random_goodbye(), signature])
+async def meme(update: Update, context: CallbackContext):
+    response = f"Coming soon"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
-def echo(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
+async def identify(update: Update, context: CallbackContext):
+    incoming_chat_id = update.effective_chat.id
+    response = build_message(f"This chat ID: {incoming_chat_id}")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+
+
+async def unknown(update: Update, context: CallbackContext.DEFAULT_TYPE):
+    response = f"Available commands are: /meme, /identify"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
 class Sennbot:
-    signature = "🤖 Sennbot"
-
     def __init__(self):
         # Connect to Redis
         url = urlparse(REDIS_TLS_URL)
@@ -97,16 +95,24 @@ class Sennbot:
             ssl_cert_reqs=None,
         )
 
-        # Connect to Bot
-        self.updater = Updater(token=TELEGRAM_BOT_TOKEN)
-        dispatcher = self.updater.dispatcher
-        dispatcher.add_handler(
-            MessageHandler(Filters.text & ~Filters.command, self.message_receive)
-        )
+        application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+        # Handlers
+        application.add_handler(CommandHandler("meme", meme))
+        application.add_handler(CommandHandler("identify", identify))
+        application.add_handler(MessageHandler(filters.COMMAND, unknown))
 
         self.check_new_deployment()
+        cron = application.job_queue
+        self.add_jobs(cron)
+        logger.info("Bot Started")
 
-        cron = self.updater.job_queue
+        try:
+            application.run_polling(drop_pending_updates=True)
+        except CancelledError:
+            pass
+
+    def add_jobs(self, cron):
         tz = pytz.timezone("Europe/Zurich")
 
         # Trash
@@ -138,31 +144,6 @@ class Sennbot:
             day=7,
         )
 
-        logger.info("Sennbot Started")
-        self.updater.start_polling(drop_pending_updates=True)
-        self.updater.idle()
-
-    def message_receive(self, update: Update, context: CallbackContext) -> None:
-        """
-        Handles incoming messages
-        """
-        incoming_message = update.message.text.lower()
-
-        # Only execute when messages begin with "bot"
-        if len(incoming_message) >= 3 and incoming_message[:3] != "bot":
-            return
-
-        if "identify" in incoming_message:
-            incoming_chat_id = update.effective_chat.id
-            message = build_message(
-                f"This chat ID: {incoming_chat_id}",
-                self.signature,
-            )
-            context.bot.send_message(chat_id=incoming_chat_id, text=message)
-
-        else:
-            echo(update, context)
-
     def check_new_deployment(self):
         """
         Because Heroku restarts dynos, we check if this is a new SHA.
@@ -182,21 +163,20 @@ class Sennbot:
         )
 
     def message_send_reminder_trash(self, context):
-        message = build_message("Morn isch Mülltag.", self.signature)
+        message = build_message("Morn isch Mülltag.")
         self.send_wg_message(message)
 
     def message_send_reminder_paper(self, context):
-        message = build_message("Morn isch Karton-Recycling Tag.", self.signature)
+        message = build_message("Morn isch Karton-Recycling Tag.")
         self.send_wg_message(message)
 
     def message_send_reminder_recycling(self, context):
-        message = build_message("Bitte denk an das Recycling.", self.signature)
+        message = build_message("Bitte denk an das Recycling.")
         self.send_wg_message(message)
 
     def message_send_reminder_finances(self, context):
         message = build_message(
             "Ryan sollte die Finanzen regeln. Überprüfe Splitwise auf ausstehende Beträge.",
-            self.signature,
         )
         self.send_wg_message(message)
 
