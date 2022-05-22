@@ -3,12 +3,13 @@ on:
     branches:
       - master
 
-name: Build and Deploy
+name: Deploy
 env:
   HEROKU_APP_NAME: "heroku-wg-chatbot"
 
 jobs:
   deploy:
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
