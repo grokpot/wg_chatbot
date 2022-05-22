@@ -66,23 +66,7 @@ def build_message(body):
     return "\n".join([get_random_greeting(), body])
 
 
-async def meme(update: Update, context: CallbackContext):
-    response = f"Coming soon"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-
-
-async def identify(update: Update, context: CallbackContext):
-    incoming_chat_id = update.effective_chat.id
-    response = build_message(f"This chat ID: {incoming_chat_id}")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-
-
-async def unknown(update: Update, context: CallbackContext.DEFAULT_TYPE):
-    response = f"Available commands are: /meme, /identify"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-
-
-class Sennbot:
+class Chatbot:
     def __init__(self):
         # Connect to Redis
         url = urlparse(REDIS_TLS_URL)
@@ -98,9 +82,9 @@ class Sennbot:
         self.application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
         # Handlers
-        self.application.add_handler(CommandHandler("meme", meme))
-        self.application.add_handler(CommandHandler("identify", identify))
-        self.application.add_handler(MessageHandler(filters.COMMAND, unknown))
+        self.application.add_handler(CommandHandler("meme", self.meme))
+        self.application.add_handler(CommandHandler("identify", self.identify))
+        self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown))
 
         self.check_new_deployment()
         cron = self.application.job_queue
@@ -111,6 +95,19 @@ class Sennbot:
             self.application.run_polling(drop_pending_updates=True)
         except CancelledError:
             pass
+
+    def meme(self, update: Update, context: CallbackContext):
+        response = build_message(f"Coming soon")
+        self.send_message(chat_id=update.effective_chat.id, text=response)
+
+    def identify(self, update: Update, context: CallbackContext):
+        incoming_chat_id = update.effective_chat.id
+        response = build_message(f"This chat ID: {incoming_chat_id}")
+        self.send_message(chat_id=update.effective_chat.id, text=response)
+
+    def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
+        response = build_message(f"Available commands are: /meme, /identify")
+        self.send_message(chat_id=update.effective_chat.id, text=response)
 
     def add_jobs(self, cron):
         tz = pytz.timezone("Europe/Zurich")
@@ -166,17 +163,19 @@ class Sennbot:
         """
         Sends a message to the Dev Chat
         """
-        self.application.updater.bot.send_message(
-            chat_id=TELEGRAM_DEV_CHAT_ID, text=message
-        )
+        self.send_message(TELEGRAM_DEV_CHAT_ID, message)
 
     def send_wg_message(self, message):
         """
         Sends a message to the WG Chat
         """
-        self.application.updater.bot.send_message(
-            chat_id=TELEGRAM_WG_CHAT_ID, text=message
-        )
+        self.send_message(TELEGRAM_WG_CHAT_ID, message)
+
+    async def send_message(self, chat_id, message):
+        """
+        General wrapper so code isn't littered with async/await
+        """
+        await self.application.updater.bot.send_message(chat_id=chat_id, text=message)
 
     def check_new_deployment(self):
         """
@@ -192,4 +191,4 @@ class Sennbot:
 
 
 if __name__ == "__main__":
-    Sennbot()
+    Chatbot()
