@@ -5,7 +5,7 @@ To help us remind to move our lazy asses.
 ## Production Setup
 The bot is owned by one person and runs on Heroku.
 Heroku access can be granted via email.
-Environment variables are set in the Heroku dashboard.
+Environment variables are set in GITHUB and transferred to Heroku. This means - *only make changes to Github secrets, not Heroku config vars*!
 
 When code is updated, a Github Action runs and deploys the updated code to Heroku.
 
