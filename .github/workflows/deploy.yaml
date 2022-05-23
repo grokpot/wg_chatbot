@@ -27,6 +27,8 @@ jobs:
           HD_TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           HD_TELEGRAM_DEV_CHAT_ID: ${{ secrets.TELEGRAM_DEV_CHAT_ID }}
           HD_TELEGRAM_WG_CHAT_ID: ${{ secrets.TELEGRAM_WG_CHAT_ID }}
+          HD_IMGFLIP_USERNAME: ${{ secrets.IMGFLIP_USERNAME }}
+          HD_IMGFLIP_PASSWORD: ${{ secrets.IMGFLIP_PASSWORD }}
           HD_GITHUB_COMMIT_SHA: ${{ github.sha }}
           HD_GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
