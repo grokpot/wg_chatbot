@@ -73,6 +73,6 @@ LOCAL=TRUE python3 main.py
 ### Running locally via Docker
 ```bash
 docker build -t wg_chatbot .
-docker run -p5000:5000 --name wg_chatbot wg_chatbot
+docker run -p8080:8080 --name wg_chatbot --env-file .env wg_chatbot
 ```
-Check browser: localhost:5000
+Check browser: localhost:8080
