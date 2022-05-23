@@ -17,8 +17,18 @@ The following env vars are required in Github under the `production` environment
 - `HEROKU_API_KEY`: The account-associated API key
 - `HEROKU_RYANS_EMAIL`: The account email address
 - `TELEGRAM_BOT_TOKEN`: The bot API token (see `Bot Setup`)
-- `TELEGRAM_DEV_CHAT_ID`: The dev/test chat ID - note this is still included in the Github "production" environment - this is simply just another chat for testing commands and not spamming WG chat members
+- `TELEGRAM_DEV_CHAT_ID`: The dev/test chat ID
+  - note this is still included in the Github "production" environment
+  - this is simply just another chat for testing commands and not spamming WG chat members
 - `TELEGRAM_WG_CHAT_ID`: The actual "production" chat ID
+
+### Redis
+Why include a redis server? Heroku periodically restarts apps, which means if we want to monitor new deployments and notify the dev channel "Hey there's a new deployment", we have to somehow maintain state to say new ≠ old.  
+We store the old Github commit SHA in Redis so when the server starts up, it checks if the environment variable `GITHUB_COMMIT_SHA` is equal to what is stored in Redis.  
+If not, we notify that a new deployment has taken place.  
+If so, we know Heroku has restarted the dyno and it's not a new deployment.
+
+Instead of using Redis, we could probably call Heroku API to unset a config var, but updating config vars in Heroku restarts the dyno, which gets tricky.
 
 
 ## Bot Setup
@@ -52,26 +62,17 @@ TELEGRAM_WG_CHAT_ID=VALUE
 REDIS_TLS_URL=VALUE
 ```
 
-### Running locally
-Turn off the bot on Heroku (Telegram doesn't allow multiple instances)
-https://dashboard.heroku.com/apps/heroku-wg-chatbot/resources
+Turn off the bot on Heroku [Telegram doesn't allow multiple instances](https://dashboard.heroku.com/apps/heroku-wg-chatbot/resources)  
 Click the edit icon, toggle the switch, save
 
-To run:
+### Running locally via CLI
 ```
 LOCAL=TRUE python3 main.py
 ```
 
-#### Build Docker image
+### Running locally via Docker
 ```bash
 docker build -t wg_chatbot .
-```
-
-#### Run Docker image
-```bash
 docker run -p5000:5000 --name wg_chatbot wg_chatbot
 ```
-
 Check browser: localhost:5000
-
-Flask/Webserver may be removed once chatbot is actually running.

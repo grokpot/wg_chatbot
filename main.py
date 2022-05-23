@@ -165,14 +165,13 @@ class Chatbot:
 
     def check_new_deployment(self):
         """
-        Because Heroku restarts dynos, we check if this is a new SHA.
+        See Readme about why we use Redis.
         """
         last_sha_key = "last_sha"
         last_sha_val = self.redis.get(last_sha_key).decode("utf-8")
         logger.info("Current SHA: %s", GITHUB_COMMIT_SHA)
         logger.info("Last SHA: %s", last_sha_val)
-        if True:
-            # if GITHUB_COMMIT_SHA != last_sha_val:
+        if GITHUB_COMMIT_SHA != last_sha_val:
             func = lambda: self.send_message(
                 TELEGRAM_DEV_CHAT_ID,
                 f"New Deployment\n SHA: {GITHUB_COMMIT_SHA}\n Message: {GITHUB_COMMIT_MESSAGE}",
