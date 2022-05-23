@@ -4,6 +4,7 @@ import logging
 import os
 import pytz
 import random
+import requests
 from urllib.parse import urlparse
 
 import redis
@@ -41,8 +42,12 @@ TELEGRAM_WG_CHAT_ID = (
 )
 GITHUB_COMMIT_SHA = os.environ.get("GITHUB_COMMIT_SHA", "local testing SHA")
 GITHUB_COMMIT_MESSAGE = os.environ.get("GITHUB_COMMIT_MESSAGE", "local testing message")
+IMGFLIP_USERNAME = os.environ.get("IMGFLIP_USERNAME")
+IMGFLIP_PASSWORD = os.environ.get("IMGFLIP_PASSWORD")
 
 # ENUMs
+IMGFLIP_GET_MEMES_URL = "https://api.imgflip.com/get_memes"
+IMGFLIP_CAPTION_MEME_URL = "https://api.imgflip.com/caption_image"
 GREETING_LIST = [
     "Tschau!",
     "Ciao!",
@@ -67,6 +72,8 @@ def build_message(body):
 
 
 class Chatbot:
+    loaded_memes = []
+
     def __init__(self):
         # Connect to Redis
         url = urlparse(REDIS_TLS_URL)
@@ -83,10 +90,14 @@ class Chatbot:
 
         logger.info("Bot Starting")
         self.check_new_deployment()
+        self.get_memes()
         # Handlers
-        self.application.add_handler(CommandHandler("meme", self.meme))
+        self.application.add_handler(CommandHandler("random_meme", self.random_meme))
         self.application.add_handler(CommandHandler("identify", self.identify))
         self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown))
+        self.application.add_handler(
+            MessageHandler(filters.TEXT & (~filters.COMMAND), self.random_meme)
+        )
         self.add_jobs(self.application.job_queue)
 
     def poll(self):
@@ -95,10 +106,6 @@ class Chatbot:
         """
         self.application.run_polling(drop_pending_updates=True)
 
-    async def meme(self, update: Update, context: CallbackContext):
-        response = build_message(f"Coming soon")
-        await self.send_message(update.effective_chat.id, response)
-
     async def identify(self, update: Update, context: CallbackContext):
         response = build_message(f"This chat ID: {update.effective_chat.id}")
         await self.send_message(update.effective_chat.id, response)
@@ -106,6 +113,62 @@ class Chatbot:
     async def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
         response = build_message(f"Available commands are: /meme, /identify")
         await self.send_message(update.effective_chat.id, response)
+
+    async def random_meme(self, update: Update, context: CallbackContext):
+        """
+        Reads non-command messages
+        According to a set of rules, parses the message and sends a random meme
+        """
+        CHAR_COUNT_CUTOFF = 72
+        RANDOM_FREQUENCY = 0.3
+
+        # Determine if meme will be built
+        message = update.message.text
+        random_frequency_hit = random.random() < RANDOM_FREQUENCY
+        if not (
+            IMGFLIP_USERNAME
+            and IMGFLIP_PASSWORD
+            and len(message) < CHAR_COUNT_CUTOFF
+            and random_frequency_hit
+        ):
+            return
+
+        # Build Meme
+        logger.info("Building Meme")
+        meme = random.choice(self.loaded_memes)
+        data = {
+            "username": IMGFLIP_USERNAME,
+            "password": IMGFLIP_PASSWORD,
+            "template_id": meme["id"],
+        }
+        # Split the message into multiple lines depending on `box_count`
+        if meme["box_count"] == 1:
+            data["text1"] = message
+        else:
+            tokenized = message.split(" ")
+            data["text0"] = " ".join(tokenized[: int(len(tokenized) / 2)])
+            data["text1"] = " ".join(tokenized[int(len(tokenized) / 2) :])
+        response = requests.post(IMGFLIP_CAPTION_MEME_URL, params=data)
+        if response.status_code != 200 or not response.json()["success"]:
+            logger.error(f"Error building meme: {response.text}")
+            return
+
+        # Send Meme
+        bot_response = response.json()["data"]["url"]
+        await self.send_message(update.effective_chat.id, bot_response)
+
+    def get_memes(self):
+        """
+        Get the list of memes from Imgflip api
+        """
+        self.memes = []
+        response = requests.get(
+            IMGFLIP_GET_MEMES_URL,
+            # headers={"Authorization": f"{IMGFLIP_API_KEY}"},
+        )
+        for meme in response.json()["data"]["memes"]:
+            self.loaded_memes.append(meme)
+        logger.info("Memes Loaded")
 
     def add_jobs(self, cron):
         tz = pytz.timezone("Europe/Zurich")

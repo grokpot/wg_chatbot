@@ -21,6 +21,8 @@ The following env vars are required in Github under the `production` environment
   - note this is still included in the Github "production" environment
   - this is simply just another chat for testing commands and not spamming WG chat members
 - `TELEGRAM_WG_CHAT_ID`: The actual "production" chat ID
+- `IMGFLIP_USERNAME`: Used for memes, currently Ryan owns the account
+- `IMGFLIP_PASSWORD`: Used for memes, currently Ryan owns the account
 
 ### Redis
 Why include a redis server? Heroku periodically restarts apps, which means if we want to monitor new deployments and notify the dev channel "Hey there's a new deployment", we have to somehow maintain state to say new ≠ old.  
