@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from locale import CHAR_MAX
 import logging
 import os
 import pytz
@@ -92,8 +93,8 @@ class Chatbot:
         self.check_new_deployment()
         self.get_memes()
         # Handlers
-        self.application.add_handler(CommandHandler("random_meme", self.random_meme))
         self.application.add_handler(CommandHandler("identify", self.identify))
+        self.application.add_handler(CommandHandler("meme", self.meme))
         self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown))
         self.application.add_handler(
             MessageHandler(filters.TEXT & (~filters.COMMAND), self.random_meme)
@@ -107,20 +108,40 @@ class Chatbot:
         self.application.run_polling(drop_pending_updates=True)
 
     async def identify(self, update: Update, context: CallbackContext):
+        """
+        Helper command to get group chat ID
+        """
         response = build_message(f"This chat ID: {update.effective_chat.id}")
         await self.send_message(update.effective_chat.id, response)
 
+    async def meme(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
+        """
+        Applies text following command to a randomly selected meme
+        """
+        user_text = update.message.text.replace("/meme", "")
+        if not user_text:
+            bot_response = (
+                "Write some text after the /meme command and I'll turn it into a meme"
+            )
+        else:
+            bot_response = self._build_meme(user_text)
+        await self.send_message(update.effective_chat.id, bot_response)
+
     async def unknown(self, update: Update, context: CallbackContext.DEFAULT_TYPE):
+        """
+        Handles unknown command entry. Example: `/fake`
+        """
         response = build_message(f"Available commands are: /meme, /identify")
         await self.send_message(update.effective_chat.id, response)
 
     async def random_meme(self, update: Update, context: CallbackContext):
         """
-        Reads non-command messages
-        According to a set of rules, parses the message and sends a random meme
+        Reads non-command messages and according to a set of rules, parses the message and sends a random meme
+        Reading non-command messages requires group privacy to be OFF
         """
-        CHAR_COUNT_CUTOFF = 72
-        RANDOM_FREQUENCY = 0.3
+        CHAR_MIN = 5
+        CHAR_MAX = 70
+        RANDOM_FREQUENCY = 0.1
 
         # Determine if meme will be built
         message = update.message.text
@@ -128,12 +149,15 @@ class Chatbot:
         if not (
             IMGFLIP_USERNAME
             and IMGFLIP_PASSWORD
-            and len(message) < CHAR_COUNT_CUTOFF
+            and CHAR_MIN < len(message) < CHAR_MAX
             and random_frequency_hit
         ):
             return
 
-        # Build Meme
+        meme_url = self._build_meme(message)
+        await self.send_message(update.effective_chat.id, meme_url)
+
+    def _build_meme(self, message: str):
         logger.info("Building Meme")
         meme = random.choice(self.loaded_memes)
         data = {
@@ -151,11 +175,9 @@ class Chatbot:
         response = requests.post(IMGFLIP_CAPTION_MEME_URL, params=data)
         if response.status_code != 200 or not response.json()["success"]:
             logger.error(f"Error building meme: {response.text}")
-            return
-
-        # Send Meme
-        bot_response = response.json()["data"]["url"]
-        await self.send_message(update.effective_chat.id, bot_response)
+            return "This is embarrassing - there was an error generating the meme"
+        else:
+            return response.json()["data"]["url"]
 
     def get_memes(self):
         """
