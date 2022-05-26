@@ -164,7 +164,6 @@ class Chatbot:
         self.memes = []
         response = requests.get(
             IMGFLIP_GET_MEMES_URL,
-            # headers={"Authorization": f"{IMGFLIP_API_KEY}"},
         )
         for meme in response.json()["data"]["memes"]:
             self.loaded_memes.append(meme)
@@ -201,24 +200,37 @@ class Chatbot:
             when=datetime.time(hour=17, tzinfo=tz),
             day=7,
         )
+        # Test cron message
+        if LOCAL:
+            cron.run_repeating(
+                self.message_send_cron_test,
+                interval=datetime.timedelta(seconds=60),
+                first=1,  # 1 second after launch
+            )
 
-    def message_send_reminder_trash(self, context):
+    async def message_send_reminder_trash(self, context):
         message = build_message("Morn isch Mülltag.")
-        self.send_message(TELEGRAM_WG_CHAT_ID, message)
+        await self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
-    def message_send_reminder_paper(self, context):
+    async def message_send_reminder_paper(self, context):
         message = build_message("Morn isch Karton-Recycling Tag.")
-        self.send_message(TELEGRAM_WG_CHAT_ID, message)
+        await self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
-    def message_send_reminder_recycling(self, context):
+    async def message_send_reminder_recycling(self, context):
         message = build_message("Bitte denk an das Recycling.")
-        self.send_message(TELEGRAM_WG_CHAT_ID, message)
+        await self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
-    def message_send_reminder_finances(self, context):
+    async def message_send_reminder_finances(self, context):
         message = build_message(
-            "Ryan sollte die Finanzen regeln. Überprüfe Splitwise auf ausstehende Beträge.",
+            "Bitte denk an die Finanzen.",
         )
-        self.send_message(TELEGRAM_WG_CHAT_ID, message)
+        await self.send_message(TELEGRAM_WG_CHAT_ID, message)
+
+    async def message_send_cron_test(self, context):
+        message = build_message(
+            "This is a cron job test.",
+        )
+        await self.send_message(TELEGRAM_WG_CHAT_ID, message)
 
     async def send_message(self, chat_id, message):
         """
@@ -230,6 +242,9 @@ class Chatbot:
         """
         See Readme about why we use Redis.
         """
+        if self.redis.connection is None:
+            logger.warning("Redis not detected. Bypassing deployment check.")
+            return
         last_sha_key = "last_sha"
         last_sha_val = self.redis.get(last_sha_key).decode("utf-8")
         logger.info("Current SHA: %s", GITHUB_COMMIT_SHA)

@@ -42,6 +42,7 @@ Telegram has a bot factory user name "BotFather". Steps to setting up a new bot:
 5. Copy token into Heroku config var `TELEGRAM_BOT_TOKEN`
 6. For a dev chat environment, create a group and [get the ID](https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id_), and copy it to the heroku config `TELEGRAM_DEV_CHAT_ID`
 7. For a prod environment, create a group, get the ID, and copy it to the heroku config `TELEGRAM_WG_CHAT_ID`
+8. Turn OFF Group Privacy so the bot can read non-command messages in groups (and make memes)
 
 ## Local development
 
